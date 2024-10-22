@@ -1,5 +1,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from typing import List
+import os
+
+def lipar_terminal():
+    input()
+    os.system('cls')
+
 
 class Observador(ABC):
     @abstractmethod
@@ -21,44 +28,86 @@ class Publicador():
             observer.update(self)
 
 class Reserva(Publicador):
-    def __init__(self, id_reserva):
+    def __init__(self, id_reserva: int):
         super().__init__()
         self.id_reserva = id_reserva
-        self.status_reserva = "pendente"
+        self.reserva_num_quarto: int
+        self.reserva_nome_hospede: str
+        self.reserva_realizada = False
 
-    def confirmar_reserva(self):
-        self.status_reserva = "confirmado"
+    def realizar_reserva(self, quarto: Quarto):
+        if quarto.disponivel:
+            self.reserva_realizada = True
         self.notify()
-
-    def cancelar_reserva(self):
-        self.status_reserva = "cancelado"
-        self.notify()
-
+    
 class Quarto(Observador):
     def __init__(self, numQuarto):
         self.numQuarto = numQuarto
+        self.disponivel = True
     
-    def update(self, publicador: Publicador):
-        if publicador.status_reserva == "confirmado":
-            print(f"O quarto {self.numQuarto} foi ocupado!")
+    def update(self, reserva: Reserva):
+        if reserva.reserva_realizada:
+            self.disponivel = False
+            alerta = f"O quarto {self.numQuarto} foi reservado!"
+        else: 
+            alerta = f"O quarto {self.numQuarto} já está ocupado!"
+        print(alerta)
+    
+    def __str__(self) -> str:
+        return f"Nº quarto: {self.numQuarto}"
 
 class Hospede(Observador):
     def __init__(self, nomeHospede):
         self.nomeHospede = nomeHospede
 
-    def update(self, publicador: Reserva):
-        if publicador.status_reserva == "confirmado":
-            print(f"{self.nomeHospede} a reserva foi realizada com sucesso!")
+    def update(self, reserva: Reserva):
+        if reserva.reserva_realizada:
+            alerta = f"{self.nomeHospede}, a reserva foi realizada com sucesso!"
+        else:
+            alerta = f"{self.nomeHospede}, infelizmente a reserva não foi realizada..."
+        print(alerta)
 
-
+    def __str__(self) -> str:
+        return f"Nome: {self.nomeHospede}"
 
 if __name__ == "__main__":
-    hospede = Hospede("Thales")
-    quarto = Quarto(57)
+    lista_de_quartos: list[Quarto] = []
+    lista_de_reserva: list[Reserva] = []
+    lista_de_quartos.append(Quarto(1))
+    lista_de_quartos.append(Quarto(2))
+    lista_de_quartos.append(Quarto(3))
+    lista_de_quartos.append(Quarto(4))
 
-    reserva = Reserva(106)
+    numReserva = 1
 
-    reserva.sub(quarto)
-    reserva.sub(hospede)
+    while True:
+        print("=-= Quartos do hotel =-=")
+        for quarto in lista_de_quartos:
+            situacao_disponibilidade = "✅" if quarto.disponivel else "❌"
+            print(f"Quarto Nº {quarto.numQuarto} {situacao_disponibilidade}")
+        print()
 
-    reserva.confirmar_reserva()
+        nome_do_hospede = input("Informe o seu nome: ")
+        numero_do_quarto = int(input("Informe o quarto que deseja reservar: "))
+        if numero_do_quarto == 0:
+            break          
+        
+        quarto_escolhido = lista_de_quartos[numero_do_quarto - 1]
+        hospede = Hospede(nome_do_hospede)
+        reserva = Reserva(numReserva)
+        reserva.sub(hospede)
+        reserva.sub(quarto_escolhido)
+        reserva.realizar_reserva(quarto_escolhido)
+        if reserva.reserva_realizada:
+            lista_de_reserva.append(reserva)
+            numReserva += 1
+        lipar_terminal()
+
+    for reserva in lista_de_reserva:
+        print(f"=-= Reserva Nº {reserva.id_reserva} =-=")
+        for observer in reserva.lista_observadores:
+            print(f"{observer}")
+        
+
+
+
